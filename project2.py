@@ -1,49 +1,149 @@
-import re
+class Node:
+    def __init__(self, data, level, fval):
+        self.data = data
+        self.level = level
+        self.fval = fval
+
+    def generate_child(self):
+        x, y = self.find(self.data, '_')
+
+        val_list = [
+            [x, y - 1],
+            [x, y + 1],
+            [x - 1, y],
+            [x + 1, y]
+        ]
+
+        children = []
+
+        for i in val_list:
+            child = self.shuffle(self.data, x, y, i[0], i[1])
+
+            if child is not None:
+                child_node = Node(child, self.level + 1, 0)
+                children.append(child_node)
+
+        return children
+
+    def shuffle(self, puz, x1, y1, x2, y2):
+        if (
+            x2 >= 0 and x2 < len(self.data)
+            and y2 >= 0 and y2 < len(self.data)
+        ):
+            temp_puz = self.copy(puz)
+
+            temp = temp_puz[x2][y2]
+            temp_puz[x2][y2] = temp_puz[x1][y1]
+            temp_puz[x1][y1] = temp
+
+            return temp_puz
+
+        else:
+            return None
+
+    def copy(self, root):
+        temp = []
+
+        for i in root:
+            t = []
+
+            for j in i:
+                t.append(j)
+
+            temp.append(t)
+
+        return temp
+
+    def find(self, puz, x):
+        for i in range(len(self.data)):
+            for j in range(len(self.data)):
+                if puz[i][j] == x:
+                    return i, j
 
 
-def get_response(user):
-    user = user.lower()
+class Puzzle:
+    def __init__(self, size):
+        self.n = size
+        self.open = []
+        self.closed = []
 
-    if re.search(r"\b(hi|hello|hey)\b", user):
-        return "Hello! Welcome to Customer Support."
+    def accept(self):
+        puz = []
 
-    elif re.search(r"order|track|tracking", user):
-        return "Please enter your Order ID to track your order."
+        for i in range(self.n):
+            temp = input().split(" ")
+            puz.append(temp)
 
-    elif re.search(r"return|replace|exchange", user):
-        return "Returns are accepted within 7 days."
+        return puz
 
-    elif re.search(r"refund", user):
-        return "Refunds take 5–7 business days."
+    def f(self, start, goal):
+        return self.h(start.data, goal) + start.level
 
-    elif re.search(r"cancel", user):
-        return "Orders can only be cancelled before shipping."
+    def h(self, start, goal):
+        temp = 0
 
-    elif re.search(r"payment", user):
-        return "We accept UPI, Cards and COD."
+        for i in range(self.n):
+            for j in range(self.n):
+                if start[i][j] != goal[i][j] and start[i][j] != '_':
+                    temp += 1
 
-    elif re.search(r"delivery|shipping", user):
-        return "Delivery usually takes 3–5 business days."
+        return temp
 
-    elif re.search(r"contact", user):
-        return "Email: support@company.com"
+    def process(self):
+        start = [
+            ['2', '8', '3'],
+            ['1', '6', '4'],
+            ['7', '_', '5']
+        ]
 
-    elif re.search(r"\b(bye|exit)\b", user):
-        return "Thank you! Have a nice day."
+        goal = [
+            ['1', '2', '3'],
+            ['8', '_', '4'],
+            ['7', '6', '5']
+        ]
 
-    else:
-        return "Sorry, I couldn't understand your question."
+        start = Node(start, 0, 0)
+        start.fval = self.f(start, goal)
+        self.open.append(start)
+
+        print("\nStart State:\n")
+
+        for row in start.data:
+            print(" ".join(row))
+
+        print("\nGoal State:\n")
+
+        for row in goal:
+            print(" ".join(row))
+
+        print("\nSolution Path:\n")
+
+        while True:
+            cur = self.open[0]
+
+            print(" || ")
+            print(" || ")
+            print(" \\/ ")
+
+            for i in cur.data:
+                for j in i:
+                    print(j, end=" ")
+
+                print()
+
+            if self.h(cur.data, goal) == 0:
+                print("\nGoal State Reached!")
+                break
+
+            for i in cur.generate_child():
+                i.fval = self.f(i, goal)
+                self.open.append(i)
+
+            self.closed.append(cur)
+            del self.open[0]
+
+            self.open.sort(key=lambda x: x.fval)
 
 
-print("=" * 45)
-print(" Customer Support Chatbot")
-print("Type 'bye' or 'exit' to end the chat.")
-print("=" * 45)
-
-while True:
-    user_input = input("\nYou: ")
-    response = get_response(user_input)
-    print("Bot:", response)
-
-    if re.search(r"\b(bye|exit)\b", user_input.lower()):
-        break
+puz = Puzzle(3)
+puz.process()
